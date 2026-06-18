@@ -111,10 +111,38 @@ cosmos-monitor --version
 | Key | Action |
 |---|---|
 | `Tab` / click | Switch between chain tabs |
-| `←` / `→` | Page through validator list |
+| `n` / `p` | Next/Previous page in the Validators table |
+| `a` | Add a new node manually (opens a popup) |
+| `Delete` | Hide the currently active node/chain |
 | `r` | Force refresh now |
 | `h` | Show help popup |
 | `q` / `Ctrl+C` | Quit |
+
+---
+
+## Advanced Configuration (Manual Overrides)
+
+`cosmos-monitor` creates a configuration file at `~/.cosmos-monitor.json` when you manually add or hide chains via the dashboard. You can also edit this file manually to fix system errors (like wrong port detection or wrong binary names).
+
+Example `~/.cosmos-monitor.json`:
+```json
+{
+  "hidden_chains": [
+    "/root/.osmosisd"
+  ],
+  "custom_chains": [
+    {
+      "home_dir": "/root/.mychain",
+      "binary": "mychaind",
+      "rpc_port": 26657,
+      "name": "My Custom Chain",
+      "denom": "MYC",
+      "color": "bright_cyan"
+    }
+  ]
+}
+```
+If you encounter detection issues, simply add your custom block with the `home_dir` path to `custom_chains` and restart `cosmos-monitor`.
 
 ---
 

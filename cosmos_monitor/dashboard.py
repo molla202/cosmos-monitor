@@ -302,6 +302,52 @@ class ChainDashboard(Container):
             self._render_val_table()
 
 
+# ── Modal Screen ──────────────────────────────────────────────────────────────
+from textual.screen import ModalScreen
+from textual.widgets import Input, Button, Label
+from .config import add_custom_chain, add_hidden_chain
+
+class AddNodeScreen(ModalScreen):
+    CSS = """
+    AddNodeScreen {
+        align: center middle;
+    }
+    #add-node-dialog {
+        width: 60;
+        height: 12;
+        padding: 1 2;
+        border: solid #4d5562;
+        background: #0d1117;
+    }
+    #add-node-dialog Label { margin-bottom: 1; }
+    #add-node-dialog Horizontal { margin-top: 1; justify: center; }
+    #add-node-dialog Button { margin: 0 1; }
+    """
+    def compose(self) -> ComposeResult:
+        with Vertical(id="add-node-dialog"):
+            yield Label("Enter the full path to the Cosmos node home directory:\n(e.g. ~/.osmosisd or /root/.mychain)")
+            yield Input(placeholder="~/.mychain", id="home-input")
+            with Horizontal():
+                yield Button("Cancel", id="cancel", variant="error")
+                yield Button("Add Node", id="add", variant="success")
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "cancel":
+            self.app.pop_screen()
+        elif event.button.id == "add":
+            home_dir = self.query_one("#home-input", Input).value
+            if home_dir.strip():
+                add_custom_chain(home_dir.strip())
+                self.app.notify("Node added to config! Restart cosmos-monitor to see changes.", title="Success")
+            self.app.pop_screen()
+
+    def on_input_submitted(self, event: Input.Submitted) -> None:
+        home_dir = event.value
+        if home_dir.strip():
+            add_custom_chain(home_dir.strip())
+            self.app.notify("Node added to config! Restart cosmos-monitor to see changes.", title="Success")
+        self.app.pop_screen()
+
 # ── Main App ──────────────────────────────────────────────────────────────────
 
 class CosmosMonitor(App):
@@ -394,6 +440,8 @@ class CosmosMonitor(App):
         Binding("ctrl+c", "quit",       "Quit"),
         Binding("n",      "next_page",  "Next Page"),
         Binding("p",      "prev_page",  "Prev Page"),
+        Binding("a",      "add_chain",  "Add Node"),
+        Binding("delete", "hide_chain", "Hide Node"),
         Binding("r",      "do_refresh", "Refresh"),
         Binding("h",      "show_help",  "Help"),
     ]
@@ -451,11 +499,20 @@ class CosmosMonitor(App):
         d = self._active_dash()
         if d: d.prev_page()
 
+    def action_add_chain(self):
+        self.push_screen(AddNodeScreen())
+
+    def action_hide_chain(self):
+        d = self._active_dash()
+        if d:
+            add_hidden_chain(d._cfg.home_dir)
+            self.notify(f"Hidden {d._cfg.name}. Restart cosmos-monitor to apply.", title="Node Hidden")
+
     def action_do_refresh(self):
         self._kick_all()
 
     def action_show_help(self):
         self.notify(
-            "q=quit  n/p=validator pages  r=refresh  Tab=switch chain",
+            "q=quit  n/p=validator pages  a=add node  Del=hide node  r=refresh  Tab=switch chain",
             title="Keyboard shortcuts",
         )

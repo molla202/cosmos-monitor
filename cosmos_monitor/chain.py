@@ -235,13 +235,25 @@ def detect_chains(
     extra_homes: list[str] = None,
 ) -> list[ChainConfig]:
     """
-    Fully automatic chain detection.
-
-    Scans all dot-directories under $HOME for Cosmos node configs.
-    No hardcoded chain list required.
+    Fully automatic chain detection with manual overrides.
     """
+    from .config import load_config
     base       = home_base or str(Path.home())
     candidates = list(extra_homes or [])
+
+    cfg_data = load_config()
+    hidden = set(cfg_data.get("hidden_chains", []))
+    custom = cfg_data.get("custom_chains", [])
+    
+    custom_overrides = {}
+    for c in custom:
+        if isinstance(c, str):
+            h = os.path.expanduser(c)
+            if h not in candidates: candidates.append(h)
+        elif isinstance(c, dict) and "home_dir" in c:
+            h = os.path.expanduser(c["home_dir"])
+            if h not in candidates: candidates.append(h)
+            custom_overrides[h] = c
 
     # Auto-scan: every hidden directory that has config/config.toml
     try:
@@ -273,6 +285,9 @@ def detect_chains(
         folder   = os.path.basename(home_dir)
         chain_id = _chain_id_from_genesis(home_dir) or folder.lstrip(".")
 
+        if chain_id in hidden or home_dir in hidden:
+            continue
+
         # Cosmetic override by chain_id (most stable identifier)
         cosmetic = _COSMETIC.get(chain_id, {})
 
@@ -283,13 +298,20 @@ def detect_chains(
                     cosmetic = val
                     break
 
-        name   = cosmetic.get("name")  or _auto_name(folder, chain_id)
-        denom  = cosmetic.get("denom") or _auto_denom(chain_id, folder)
-        color  = cosmetic.get("color") or _COLOR_CYCLE[color_idx % len(_COLOR_CYCLE)]
-        binary = _guess_binary(folder, chain_id)
+        override = custom_overrides.get(home_dir, {})
+
+        name   = override.get("name")   or cosmetic.get("name")  or _auto_name(folder, chain_id)
+        denom  = override.get("denom")  or cosmetic.get("denom") or _auto_denom(chain_id, folder)
+        color  = override.get("color")  or cosmetic.get("color") or _COLOR_CYCLE[color_idx % len(_COLOR_CYCLE)]
+        binary = override.get("binary") or _guess_binary(folder, chain_id)
 
         ports   = _parse_ports(home_dir)
-        moniker = _moniker_from_config(home_dir)
+        if "rpc_port" in override: ports.rpc = override["rpc_port"]
+        if "p2p_port" in override: ports.p2p = override["p2p_port"]
+        if "grpc_port" in override: ports.grpc = override["grpc_port"]
+        if "rest_port" in override: ports.rest = override["rest_port"]
+
+        moniker = override.get("moniker") or _moniker_from_config(home_dir)
 
         results.append(ChainConfig(
             home_dir=home_dir,
