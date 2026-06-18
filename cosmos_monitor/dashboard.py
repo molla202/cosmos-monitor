@@ -87,7 +87,7 @@ class ChainPanel(Static):
         
         return (
             f"[bold]CHAIN STATUS[/]\n\n"
-            f" [{sc}]■ {sync}[/] \\[{sc}]{_bar(d.sync_pct, 40)}[/] {d.sync_pct:.2f}% | {d.latest_block:,} blocks"
+            f" [{sc}]■ {sync}[/] [{sc}]{_bar(d.sync_pct, 40)}[/] {d.sync_pct:.2f}% | {d.latest_block:,} blocks"
         )
 
 
