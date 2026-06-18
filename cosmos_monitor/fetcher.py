@@ -124,17 +124,17 @@ def _disk(path: str) -> float:
 
 # ── Log reading ───────────────────────────────────────────────────────────────
 
-def _read_logs(home_dir: str, n: int = 30) -> list[str]:
+def _read_logs(home_dir: str, pid: int = 0, binary: str = "", n: int = 30) -> list[str]:
     candidates = [
         os.path.join(home_dir, "logs", "node.log"),
-        os.path.join(home_dir, "logs", "pchaind.log"),
+        os.path.join(home_dir, "logs", f"{binary}.log") if binary else "",
         os.path.join(home_dir, "log",  "node.log"),
         os.path.join(home_dir, "logs", "app.log"),
         "/var/log/cosmovisor.log",
     ]
-    # Also try journalctl as fallback
+    # Check physical files first
     for path in candidates:
-        if os.path.exists(path):
+        if path and os.path.exists(path):
             try:
                 with open(path, "rb") as f:
                     f.seek(0, 2)
@@ -144,17 +144,44 @@ def _read_logs(home_dir: str, n: int = 30) -> list[str]:
                 return [l for l in raw if l.strip()][-n:]
             except Exception:
                 pass
-    # journalctl fallback
-    try:
-        r = subprocess.run(
-            ["journalctl", "-n", str(n), "--no-pager", "-q"],
-            capture_output=True, text=True, timeout=3
-        )
-        lines = [l for l in r.stdout.splitlines() if l.strip()]
-        if lines:
-            return lines
-    except Exception:
-        pass
+
+    # Try to find exactly which systemd service is running this PID
+    unit = ""
+    if pid > 0:
+        try:
+            with open(f"/proc/{pid}/cgroup") as f:
+                for line in f:
+                    if ".service" in line:
+                        unit = line.strip().split("/")[-1]
+                        break
+        except Exception:
+            pass
+
+    if unit:
+        try:
+            r = subprocess.run(
+                ["journalctl", "-u", unit, "-n", str(n), "--no-pager", "-q"],
+                capture_output=True, text=True, timeout=3
+            )
+            lines = [l for l in r.stdout.splitlines() if l.strip()]
+            if lines:
+                return lines
+        except Exception:
+            pass
+
+    # Fallback to syslog identifier (binary name)
+    if binary:
+        try:
+            r = subprocess.run(
+                ["journalctl", "-t", binary, "-n", str(n), "--no-pager", "-q"],
+                capture_output=True, text=True, timeout=3
+            )
+            lines = [l for l in r.stdout.splitlines() if l.strip()]
+            if lines:
+                return lines
+        except Exception:
+            pass
+
     return []
 
 
@@ -307,7 +334,7 @@ def fetch_node_status(cfg: ChainConfig) -> NodeStatus:
 
     if not running:
         s.error    = f"{cfg.binary} not running"
-        s.log_lines = _read_logs(cfg.home_dir)
+        s.log_lines = _read_logs(cfg.home_dir, 0, cfg.binary)
         return s
 
     # RPC /status
@@ -345,6 +372,6 @@ def fetch_node_status(cfg: ChainConfig) -> NodeStatus:
     )
 
     # Logs
-    s.log_lines = _read_logs(cfg.home_dir)
+    s.log_lines = _read_logs(cfg.home_dir, s.pid, cfg.binary)
 
     return s
