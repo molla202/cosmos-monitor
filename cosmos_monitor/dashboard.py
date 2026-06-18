@@ -339,8 +339,7 @@ class CosmosMonitor(App):
     }
 
     .top-row {
-        height: auto;
-        min-height: 9;
+        height: 14;
         margin-bottom: 1;
     }
 
@@ -357,6 +356,7 @@ class CosmosMonitor(App):
 
     .top-row > .panel {
         margin-right: 1;
+        height: 100%;
     }
 
     .panel-table {
@@ -366,7 +366,7 @@ class CosmosMonitor(App):
     }
 
     .panel-log {
-        height: 15;
+        height: 13;
         border: solid #4d5562;
         padding: 0 2;
     }
