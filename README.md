@@ -64,6 +64,13 @@ bash <(curl -sSL https://raw.githubusercontent.com/Edsny1/cosmos-monitor/main/in
 pip install git+https://github.com/Edsny1/cosmos-monitor.git
 ```
 
+### How to Update (Güncelleme)
+To update to the latest version after a `git push` or a new release, simply run:
+```bash
+pip install --upgrade --break-system-packages git+https://github.com/Edsny1/cosmos-monitor.git
+```
+*(If `--break-system-packages` is not required by your OS, you can omit it).*
+
 ### Install from source (development)
 
 ```bash

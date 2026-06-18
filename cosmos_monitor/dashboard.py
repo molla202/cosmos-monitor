@@ -2,6 +2,7 @@
 
 import asyncio
 import os
+import re
 from pathlib import Path
 
 from textual.app import App, ComposeResult
@@ -60,7 +61,7 @@ class NodePanel(Static):
         rpc  = f"{ok} Listening" if d.running else f"{no} Down"
         
         return (
-            f"[bold]NODE STATUS[/]\n"
+            f"[bold]NODE STATUS[/]\n\n"
             f" {proc}\n"
             f" RPC: {rpc}\n"
             f" Uptime: {_fmt_uptime(d.uptime_sec)}\n"
@@ -105,7 +106,7 @@ class NetworkPanel(Static):
         d = self._d
         nid = d.node_id or "—"
         return (
-            f"[bold]NETWORK STATUS[/]\n"
+            f"[bold]NETWORK STATUS[/]\n\n"
             f" Connected to [bright_green]{d.peers}[/] peers (Node ID):\n"
             f"  [dim]{nid}[/]\n"
             f" Latency: {d.latency_ms}ms\n"
@@ -145,7 +146,7 @@ class MyValPanel(Static):
             rew_info = f"\n\n [bright_green]Rewards available![/]\n Run: {self._cfg.binary} tx distribution withdraw-rewards ..."
 
         return (
-            f"[bold]MY VALIDATOR STATUS[/]\n"
+            f"[bold]MY VALIDATOR STATUS[/]\n\n"
             f" Moniker: [bold]{v.moniker or d.moniker or '—'}[/]{jail}\n"
             f" Status: [{sc}]{v.status}[/]\n"
             f" Power: {v.voting_power}\n"
@@ -168,16 +169,19 @@ class ChainDashboard(Container):
 
     def compose(self) -> ComposeResult:
         with Vertical(id="main-layout"):
-            with Horizontal(classes="row"):
-                yield NodePanel(self._cfg, classes="panel")
-                yield ChainPanel(self._cfg, classes="panel")
-            with Horizontal(classes="row"):
-                yield NetworkPanel(self._cfg, classes="panel")
-                yield MyValPanel(self._cfg, classes="panel")
-            
-            with Vertical(classes="panel-table"):
-                yield Static(f"[bold]NETWORK VALIDATORS[/] — loading…", id="val-hdr")
-                yield DataTable(id="val-tbl", show_cursor=True)
+            with Horizontal(id="top-split"):
+                with Vertical(id="sidebar"):
+                    yield NodePanel(self._cfg, classes="panel")
+                    yield MyValPanel(self._cfg, classes="panel")
+                
+                with Vertical(id="main-content"):
+                    with Horizontal(classes="top-row"):
+                        yield ChainPanel(self._cfg, classes="panel")
+                        yield NetworkPanel(self._cfg, classes="panel")
+                    
+                    with Vertical(classes="panel-table"):
+                        yield Static(f"[bold]NETWORK VALIDATORS[/] — loading…", id="val-hdr")
+                        yield DataTable(id="val-tbl", show_cursor=True)
             
             with Vertical(classes="panel-log"):
                 yield Static(f"[bold]📜 LOGS[/]", id="log-hdr")
@@ -191,6 +195,19 @@ class ChainDashboard(Container):
             f"STAKE ({self._cfg.denom})", "COMMISSION%",
             "COMM REWARDS", "OUTSTANDING"
         )
+        
+        # Apply dynamic border color based on the chain!
+        try:
+            c = self._cfg.color.replace("bright_", "")
+            for p in self.query(".panel"):
+                p.styles.border = ("solid", c)
+            for p in self.query(".panel-table"):
+                p.styles.border = ("solid", c)
+            for p in self.query(".panel-log"):
+                p.styles.border = ("solid", c)
+        except Exception:
+            pass
+
         self._ready = True
 
     def push_data(self, d: NodeStatus):
@@ -220,6 +237,13 @@ class ChainDashboard(Container):
                         line = line.replace(" ERR", " [bright_red]ERR[/]", 1)
                     elif " WRN " in line or " WARN" in line:
                         line = line.replace(" WRN", " [yellow]WRN[/]", 1)
+                    
+                    # Regex Highlighting for Matrix-like log experience
+                    line = re.sub(r'(\b(?:\d{1,3}\.){3}\d{1,3}\b)', r'[bright_cyan]\1[/]', line)
+                    line = re.sub(r'(\b[0-9A-Fa-f]{40,64}\b)', r'[bright_magenta]\1[/]', line)
+                    line = re.sub(r'(module=[a-zA-Z0-9_-]+)', r'[bright_green]\1[/]', line)
+                    line = re.sub(r'(height=\d+)', r'[bright_yellow]\1[/]', line)
+
                     log.write(line)
         except Exception:
             pass
@@ -239,7 +263,7 @@ class ChainDashboard(Container):
 
         hdr.update(
             f"[bold]NETWORK VALIDATORS[/] (PAGE {self._val_page + 1}/{pages})   "
-            f"[dim]← / → : change page | Total: {total} validators[/]"
+            f"[dim]n / p : change page | Total: {total} validators[/]"
         )
         for v in page:
             s  = _sc(v["status"])
@@ -298,7 +322,23 @@ class CosmosMonitor(App):
         padding: 0 1;
     }
 
-    .row {
+    #top-split {
+        height: 1fr;
+        margin-bottom: 1;
+    }
+
+    #sidebar {
+        width: 40;
+        height: 100%;
+        margin-right: 1;
+    }
+
+    #main-content {
+        width: 1fr;
+        height: 100%;
+    }
+
+    .top-row {
         height: auto;
         min-height: 9;
         margin-bottom: 1;
@@ -306,25 +346,29 @@ class CosmosMonitor(App):
 
     .panel {
         width: 1fr;
-        height: 100%;
+        height: 1fr;
         border: solid #4d5562;
         padding: 1 2;
-        margin-right: 1;
     }
-    
-    .panel-table {
-        height: 19;
-        border: solid #4d5562;
-        padding: 0 2;
+
+    #sidebar > .panel {
         margin-bottom: 1;
+    }
+
+    .top-row > .panel {
         margin-right: 1;
     }
-    
-    .panel-log {
+
+    .panel-table {
         height: 1fr;
         border: solid #4d5562;
         padding: 0 2;
-        margin-right: 1;
+    }
+
+    .panel-log {
+        height: 15;
+        border: solid #4d5562;
+        padding: 0 2;
     }
 
     #val-hdr { margin-top: 1; margin-bottom: 1; text-align: center; }
@@ -348,8 +392,8 @@ class CosmosMonitor(App):
     BINDINGS = [
         Binding("q",      "quit",       "Quit"),
         Binding("ctrl+c", "quit",       "Quit"),
-        Binding("right",  "next_page",  "Next Page"),
-        Binding("left",   "prev_page",  "Prev Page"),
+        Binding("n",      "next_page",  "Next Page"),
+        Binding("p",      "prev_page",  "Prev Page"),
         Binding("r",      "do_refresh", "Refresh"),
         Binding("h",      "show_help",  "Help"),
     ]
@@ -361,7 +405,7 @@ class CosmosMonitor(App):
         self._interval = refresh_interval
 
     def compose(self) -> ComposeResult:
-        yield Static("[bold bright_cyan]OSHVANK VALIDATOR DASHBOARD v0.2.26[/]", classes="mini-logo")
+        yield Static("[bold bright_cyan]OSHVANK COSMOS VALIDATOR DASHBOARD v0.0.1[/]", classes="mini-logo")
         with TabbedContent():
             for cfg in self._chains:
                 with TabPane(cfg.name, id=f"tab-{_tab_id(cfg)}"):
@@ -412,6 +456,6 @@ class CosmosMonitor(App):
 
     def action_show_help(self):
         self.notify(
-            "q=quit  ←/→=validator pages  r=refresh  Tab=switch chain",
+            "q=quit  n/p=validator pages  r=refresh  Tab=switch chain",
             title="Keyboard shortcuts",
         )
