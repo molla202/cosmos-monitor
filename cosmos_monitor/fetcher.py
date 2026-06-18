@@ -124,6 +124,13 @@ def _disk(path: str) -> float:
 
 # ── Log reading ───────────────────────────────────────────────────────────────
 
+def _get_ppid(pid: int) -> int:
+    try:
+        with open(f"/proc/{pid}/stat") as f:
+            return int(f.read().split()[3])
+    except Exception:
+        return 0
+
 def _read_logs(home_dir: str, pid: int = 0, binary: str = "", n: int = 30) -> list[str]:
     candidates = [
         os.path.join(home_dir, "logs", "node.log"),
@@ -145,7 +152,7 @@ def _read_logs(home_dir: str, pid: int = 0, binary: str = "", n: int = 30) -> li
             except Exception:
                 pass
 
-    # Try to find exactly which systemd service is running this PID
+    # 1. Try to find exactly which systemd service is running this PID
     unit = ""
     if pid > 0:
         try:
@@ -169,7 +176,22 @@ def _read_logs(home_dir: str, pid: int = 0, binary: str = "", n: int = 30) -> li
         except Exception:
             pass
 
-    # Fallback to syslog identifier (binary name)
+    # 2. Try fetching directly by PID and Parent PID (extremely robust for tmux/screen/cosmovisor)
+    if pid > 0:
+        ppid = _get_ppid(pid)
+        cmd = ["journalctl", f"_PID={pid}"]
+        if ppid > 0:
+            cmd.append(f"_PID={ppid}")
+        cmd.extend(["-n", str(n), "--no-pager", "-q"])
+        try:
+            r = subprocess.run(cmd, capture_output=True, text=True, timeout=3)
+            lines = [l for l in r.stdout.splitlines() if l.strip()]
+            if lines:
+                return lines
+        except Exception:
+            pass
+
+    # 3. Fallback to syslog identifier (binary name)
     if binary:
         try:
             r = subprocess.run(
@@ -181,6 +203,26 @@ def _read_logs(home_dir: str, pid: int = 0, binary: str = "", n: int = 30) -> li
                 return lines
         except Exception:
             pass
+
+    # 4. Global grep fallback (last resort)
+    try:
+        r = subprocess.run(
+            ["journalctl", "-n", "300", "--no-pager", "-q"],
+            capture_output=True, text=True, timeout=3
+        )
+        lines = []
+        folder = os.path.basename(home_dir).lstrip(".")
+        for l in r.stdout.splitlines():
+            l_str = l.strip()
+            # Try to match the binary or the chain's folder name in the log line
+            if binary and binary in l_str:
+                lines.append(l_str)
+            elif folder and folder in l_str:
+                lines.append(l_str)
+        if lines:
+            return lines[-n:]
+    except Exception:
+        pass
 
     return []
 
