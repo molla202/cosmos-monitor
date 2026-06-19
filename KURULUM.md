@@ -45,7 +45,7 @@ Bundan sonraki adımlarda `python3` yerine `python3.11` kullan.
 
 ```bash
 cd ~
-git clone https://github.com/Edsny1/cosmos-monitor.git
+git clone https://github.com/molla202/cosmos-monitor.git
 cd ~/cosmos-monitor
 
 python3 -m venv venv
