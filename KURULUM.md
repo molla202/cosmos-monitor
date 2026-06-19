@@ -144,25 +144,6 @@ sunucudaki `ufw`'de ilgili portu açman gerekir:
 sudo ufw allow 8000/tcp
 ```
 
----
-
-## 5) ÖNEMLİ — Güvenlik notu
-
-Bu panelde **hiçbir kimlik doğrulama (login/şifre) yoktur**. Portu doğrudan
-internete açık bırakırsan, validator node'larının IP'sini, peer sayısını,
-komisyon ödüllerini ve hatta "node ekle/gizle" butonlarını herkes görüp
-kullanabilir. Önerilen üç seçenekten birini uygula:
-
-1. **En basit:** Güvenlik duvarında 8000 portunu sadece kendi IP adresine aç,
-   herkese değil (`ufw allow from SENIN_IP to any port 8000`).
-2. **SSH tüneli:** Portu hiç dışa açma, ihtiyaç olduğunda
-   `ssh -L 8000:localhost:8000 kullanici@sunucu` ile tünelleyip
-   `http://localhost:8000`'den bak.
-3. **Nginx reverse proxy + Basic Auth:** Portu dışa açmadan önüne nginx koy,
-   `htpasswd` ile kullanıcı adı/şifre ekle, HTTPS için Let's Encrypt kullan.
-   İstersen bu kurulumu da ayrıca hazırlayabilirim.
-
----
 
 ## TUI'ye göre farklar / ek özellikler
 
