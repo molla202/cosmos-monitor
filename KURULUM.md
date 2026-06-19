@@ -17,6 +17,13 @@ cosmos_monitor/web/static/*    (yeni — frontend: index.html, style.css, app.js
 
 ## Kurulum
 
+> **Not:** Daha önce bu paketi kurduysan ve `cosmos-monitor --web` çalışırken
+> log'da sürekli `WARNING: No supported WebSocket library detected` görüyorsan,
+> eski `pyproject.toml`'da `uvicorn` paketi WebSocket desteği olmadan
+> kurulmuştu. Bu paketteki güncel `pyproject.toml`, `uvicorn[standard]`
+> kullanıyor ve bunu otomatik çözüyor. Hızlı manuel çözüm (venv aktifken):
+> `pip install websockets` — sonra `cosmos-monitor --web`'i yeniden başlat.
+
 Sunucunda repoyu zaten klonladıysan, bu dosyaları aynı dizin yapısıyla üzerine
 kopyala (yani `cosmos_monitor/cli.py` ve `pyproject.toml`'un üzerine yazılacak,
 `cosmos_monitor/web/` klasörü yeni eklenecek):
