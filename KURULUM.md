@@ -28,11 +28,24 @@ Sunucunda repoyu zaten klonladıysan, bu dosyaları aynı dizin yapısıyla üze
 kopyala (yani `cosmos_monitor/cli.py` ve `pyproject.toml`'un üzerine yazılacak,
 `cosmos_monitor/web/` klasörü yeni eklenecek):
 
+```
+# 1. Create a virtual environment specifically using Python 3.11
+python3.11 -m venv venv
+
+# 2. Activate the virtual environment
+source venv/bin/activate
+
+# 3. Install your package safely (without sudo or --break-system-packages)
+pip install -e .
+
+OR
+
+python3.11 -m pip install -e . --break-system-packages
+```
+
 ```bash
-cd ~/cosmos-monitor          # repo'nun bulunduğu dizin
-# bu paketi açtıktan sonra:
-cp -r web-dashboard-paketi/* .
-pip install -e . --break-system-packages   # fastapi + uvicorn da kurulur
+cd ~/cosmos-monitor
+pip install -e . --break-system-packages
 ```
 
 Sıfırdan kuruyorsan, önce normal `install.sh` adımlarını uygula, sonra üstüne
