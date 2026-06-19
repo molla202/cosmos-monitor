@@ -52,15 +52,6 @@ python3 -m venv venv
 source venv/bin/activate          # bundan sonra prompt'un başında (venv) görünür
 ```
 
-Bu paketteki dosyaları repo'nun üzerine kopyala (yani `cosmos_monitor/cli.py` ve
-`pyproject.toml` üzerine yazılacak, `cosmos_monitor/web/` klasörü yeni eklenecek):
-
-```bash
-cp -r /yol/web-dashboard-paketi/* ~/cosmos-monitor/
-```
-
-Sonra kur:
-
 ```bash
 pip install --upgrade pip
 pip install -e .
