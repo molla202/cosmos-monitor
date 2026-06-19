@@ -37,8 +37,38 @@ def main():
         metavar="SEC",
         help="Refresh interval in seconds (default: 5)",
     )
+    parser.add_argument(
+        "--web",
+        action="store_true",
+        help="Launch the web dashboard (browser) instead of the terminal UI.",
+    )
+    parser.add_argument(
+        "--web-host",
+        default="0.0.0.0",
+        metavar="HOST",
+        help="Web dashboard bind address (default: 0.0.0.0 — reachable from outside the host)",
+    )
+    parser.add_argument(
+        "--web-port",
+        type=int,
+        default=8000,
+        metavar="PORT",
+        help="Web dashboard port (default: 8000)",
+    )
 
     args = parser.parse_args()
+
+    if args.web:
+        from .web.server import run as run_web
+        print(f"cosmos-monitor web dashboard → http://{args.web_host}:{args.web_port}")
+        print("Ctrl+C to stop.")
+        run_web(
+            host=args.web_host,
+            port=args.web_port,
+            refresh_interval=args.refresh,
+            extra_homes=args.home or [],
+        )
+        sys.exit(0)
 
     # Detect chains
     chains = detect_chains(extra_homes=args.home or [])

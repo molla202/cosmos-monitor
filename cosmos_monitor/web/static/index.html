@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>cosmos-monitor</title>
+<link rel="icon" href="data:," />
+<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark" aria-hidden="true">&#10209;</span>
+    <div class="brand-text">
+      <h1>cosmos-monitor</h1>
+      <span class="brand-sub">web dashboard</span>
+    </div>
+  </div>
+
+  <div id="constellation" class="constellation" role="navigation" aria-label="Tüm node'lar"></div>
+
+  <div class="topbar-actions">
+    <button id="refreshBtn" class="icon-btn" title="Şimdi yenile (r)">&#x21bb;</button>
+    <button id="addNodeBtn" class="icon-btn" title="Node ekle (a)">+</button>
+    <span id="connStatus" class="conn-status conn-connecting">bağlanıyor&hellip;</span>
+  </div>
+</header>
+
+<nav id="tabs" class="tabs" role="tablist" aria-label="Zincirler"></nav>
+
+<main id="content"></main>
+
+<div id="emptyState" class="empty-state hidden">
+  <p class="empty-title">Hiçbir validator node algılanmadı</p>
+  <p class="empty-body">Sunucuda <code>~/.&lt;chain&gt;</code> dizininde <code>config/config.toml</code> bulunan
+     bir node arandı ama bulunamadı. Sağ üstteki <strong>+</strong> ile manuel olarak bir home
+     dizini ekleyebilirsin (örn. <code>/root/.osmosisd</code>).</p>
+</div>
+
+<dialog id="addNodeDialog" class="dialog">
+  <form id="addNodeForm">
+    <h2>Node ekle</h2>
+    <p class="dialog-hint">Cosmos node home dizininin tam yolu (örn. <code>~/.osmosisd</code>)</p>
+    <input id="homeInput" type="text" placeholder="/root/.mychain" autocomplete="off" required />
+    <div class="dialog-actions">
+      <button type="button" id="cancelAddNode" class="btn btn-ghost">Vazgeç</button>
+      <button type="submit" class="btn btn-primary">Ekle</button>
+    </div>
+  </form>
+</dialog>
+
+<div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+
+<template id="chainPageTemplate">
+  <section class="chain-page" role="tabpanel">
+    <div class="grid">
+      <div class="col-side">
+        <article class="panel panel-node">
+          <h3 class="panel-title">NODE DURUMU</h3>
+          <dl class="kv" data-field="node"></dl>
+        </article>
+        <article class="panel panel-myval">
+          <h3 class="panel-title">VALIDATÖRÜM</h3>
+          <dl class="kv" data-field="myval"></dl>
+        </article>
+      </div>
+
+      <div class="col-main">
+        <div class="row-top">
+          <article class="panel panel-chain">
+            <h3 class="panel-title">ZİNCİR DURUMU</h3>
+            <div data-field="chain"></div>
+          </article>
+          <article class="panel panel-network">
+            <h3 class="panel-title">AĞ DURUMU</h3>
+            <dl class="kv" data-field="network"></dl>
+          </article>
+        </div>
+
+        <article class="panel panel-table">
+          <div class="table-head">
+            <h3 class="panel-title" data-field="val-count">AĞ VALİDATÖRLERİ</h3>
+            <input type="search" class="val-search" placeholder="moniker ara…" data-field="val-search" />
+          </div>
+          <div class="table-scroll">
+            <table class="val-table">
+              <thead>
+                <tr>
+                  <th data-sort="moniker">NODE ADI</th>
+                  <th data-sort="status">DURUM</th>
+                  <th data-sort="tokens">STAKE</th>
+                  <th data-sort="commission">KOMİSYON</th>
+                  <th data-sort="comm_rewards">KOM. ÖDÜL</th>
+                  <th data-sort="outstanding">BEKLEYEN</th>
+                </tr>
+              </thead>
+              <tbody data-field="val-rows"></tbody>
+            </table>
+          </div>
+          <div class="table-pager">
+            <button class="btn btn-ghost btn-sm" data-action="prev-page">&larr; önceki</button>
+            <span data-field="page-info"></span>
+            <button class="btn btn-ghost btn-sm" data-action="next-page">sonraki &rarr;</button>
+          </div>
+        </article>
+      </div>
+    </div>
+
+    <article class="panel panel-log">
+      <div class="table-head">
+        <h3 class="panel-title">LOGLAR</h3>
+        <button class="btn btn-ghost btn-sm hidden" data-action="hide-chain">Bu node'u gizle</button>
+      </div>
+      <div class="log-area" data-field="log"></div>
+    </article>
+  </section>
+</template>
+
+<script src="/app.js"></script>
+</body>
+</html>

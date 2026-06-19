@@ -25,6 +25,8 @@ classifiers = [
 dependencies = [
     "textual>=0.59.0",
     "rich>=13.7.0",
+    "fastapi>=0.110.0",
+    "uvicorn>=0.27.0",
 ]
 
 [project.scripts]
@@ -40,4 +42,4 @@ where = ["."]
 include = ["cosmos_monitor*"]
 
 [tool.setuptools.package-data]
-"cosmos_monitor" = ["../assets/*.ansi", "assets/*.ansi"]
+"cosmos_monitor" = ["../assets/*.ansi", "assets/*.ansi", "web/static/*"]
